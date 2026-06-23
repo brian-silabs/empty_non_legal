@@ -1,0 +1,58 @@
+# Silicon Labs Project Configuration Tools: slcp, v0, Component selection file.
+project_name: empty_non_legal
+label: empty_non_legal
+description: |
+  This example project shows an empty configuration that can be used as a starting point to add components and functionality.
+category: Example|Platform
+filter:
+- name: Device Type
+  value:
+  - SoC
+- name: MCU
+  value:
+  - 32-bit MCU
+- name: Project Difficulty
+  value:
+  - Beginner
+package: platform
+quality: production
+readme:
+- path: readme.md
+source:
+- path: app.c
+include:
+- path: .
+  file_list:
+  - path: app.h
+sdk:
+  vendor: null
+  id: simplicity_sdk
+  version: 2025.6.3
+toolchain_settings: [
+  ]
+component:
+- id: EFR32MG24B210F1536IM48
+- id: brd4186c
+- id: clock_manager
+- id: device_init
+- id: sl_main
+define:
+- name: DEBUG_EFM
+template_contribution:
+- name: memory_ram_start
+  priority: 0
+  value: 537067520
+- name: memory_ram_size
+  priority: 0
+  value: 65536
+- name: memory_flash_start
+  priority: 0
+  value: 135266304
+- name: memory_flash_size
+  priority: 0
+  value: 524288
+ui_hints:
+  highlight:
+  - path: readme.md
+    focus: true
+
