@@ -29,17 +29,33 @@
 
  MEMORY
  {
-   FLASH      (rx)  : ORIGIN = 0x8100000, LENGTH = 0x80000
+   FLASH      (rx)  : ORIGIN = 0x8100100, LENGTH = 0x7FF00
+   MAGIC_region (rx) : ORIGIN = 0x08100000, LENGTH = 0x100
    RAM        (rwx) : ORIGIN = 0x20030000, LENGTH = 0x10000
  }
 
 ENTRY(Reset_Handler)
 
-/* Fixed address used by empty to find the callable module ABI. */
-SPLIT_INTERFACE_ADDRESS = 0x08100200;
-
 SECTIONS
 {
+
+  .split_interface ORIGIN(MAGIC_region) :
+  {
+    /* Same-style boundary symbols */
+    __split_interface_start__ = .;
+    split_interface_start = .;
+
+    KEEP(*(.split_interface))
+    KEEP(*(.split_interface.*))
+
+    __split_interface_end__ = .;
+    split_interface_end = .;
+  } > MAGIC_region
+
+  /* Optional region boundary symbols */
+  __MAGIC_region_start__ = ORIGIN(MAGIC_region);
+  __MAGIC_region_end__   = ORIGIN(MAGIC_region) + LENGTH(MAGIC_region) - 1;
+  __MAGIC_region_limit__ = ORIGIN(MAGIC_region) + LENGTH(MAGIC_region);
 
   .vectors :
   {
@@ -49,15 +65,6 @@ SECTIONS
 
     __Vectors_End = .;
     __Vectors_Size = __Vectors_End - __Vectors;
-  } > FLASH
-
-  .split_interface SPLIT_INTERFACE_ADDRESS :
-  {
-    . = ALIGN(4);
-    __split_interface_start__ = .;
-    KEEP(*(.split_interface))
-    . = ALIGN(4);
-    __split_interface_end__ = .;
   } > FLASH
 
   .stack (NOLOAD):
