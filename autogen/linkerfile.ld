@@ -27,6 +27,8 @@
  *
  ******************************************************************************/
 
+/* Manual split-image layout: preserve MAGIC_region and .split_interface
+ * when regenerating this file. The legal image reads its ABI at 0x08100000. */
  MEMORY
  {
    FLASH      (rx)  : ORIGIN = 0x8100100, LENGTH = 0x7FF00
@@ -51,6 +53,13 @@ SECTIONS
     __split_interface_end__ = .;
     split_interface_end = .;
   } > MAGIC_region
+
+  ASSERT(ADDR(.split_interface) == 0x08100000,
+         "Split interface must remain at the host ABI address")
+  ASSERT(SIZEOF(.split_interface) > 0,
+         "Split interface descriptor is missing")
+  ASSERT(SIZEOF(.split_interface) <= LENGTH(MAGIC_region),
+         "Split interface descriptor exceeds MAGIC_region")
 
   /* Optional region boundary symbols */
   __MAGIC_region_start__ = ORIGIN(MAGIC_region);
@@ -227,14 +236,14 @@ SECTIONS
 /* Calculate heap size based on RAM limits. */
 heap_limit = ORIGIN(RAM) + LENGTH(RAM);  /* End of RAM */
 heap_size = heap_limit - __HeapBase;
-  .heap (NOLOAD):
+  .memory_manager_heap (NOLOAD):
   {
     . = ALIGN(8);
     __HeapBase = .;
     . += heap_size;
     __end__ = .;
     _end = __end__;
-    KEEP(*(.heap*))
+    KEEP(*(.memory_manager_heap*))
     __HeapLimit = ORIGIN(RAM) + LENGTH(RAM);
   } > RAM
 

@@ -1,17 +1,19 @@
 <?xml version="1.0" encoding="ASCII"?>
 <model:MDescriptors xmlns:model="http://www.silabs.com/ss/Studio.ecore">
   <descriptors name="empty_non_legal">
-    <properties key="projectCommon.sdkId" value="com.silabs.sdk.stack.sisdk:2025.6.3._-15994805522373502478"/>
+    <properties key="projectCommon.sdkId" value="com.silabs.sdk.stack.sisdk:2025.6.3._-20292436532373502478"/>
     <properties key="universalConfig.relativeWorkspacePath" value="../empty_non_legal.slcw"/>
     <properties key="universalConfig.generationDirectory" value=""/>
     <properties key="universalConfig.toolchainCompatibility" value="iar gcc"/>
     <properties key="projectCommon.overwriteCopiedSources" value="false"/>
-    <properties key="projectCommon.boardIds" value="brd4186c:0.0.0.A01 brd4002a:0.0.0.A06"/>
+    <properties key="projectCommon.boardIds" value="brd4186c:0.0.0.A01 brd4002a:0.0.0.A07"/>
     <properties key="projectCommon.kitId" value=""/>
     <properties key="projectCommon.partId" value="mcu.arm.efr32.mg24.efr32mg24b210f1536im48"/>
     <properties key="projectCommon.toolchainId" value="com.silabs.ss.framework.project.core.noToolChain:0.0.0"/>
     <properties key="universalConfig.projectTypeIds" value="visual-studio-code"/>
     <properties key="projectCommon.importModeId" value="COPY"/>
     <properties key="universalConfig.compSelProjInstanceId" value="1782220670112"/>
+    <properties key="universalConfig.filteredToolchains" value="iar gcc"/>
+    <properties key="universalConfig.ucProjectCacheState" value="810195269"/>
   </descriptors>
 </model:MDescriptors>

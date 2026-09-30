@@ -1,4 +1,5 @@
 #CRC Codes for initially generated config files -- do not modify!
+psa_crypto_config.h=508311426
 sl_board_control_config.h=205405711
 sl_clock_manager_oscillator_config.h=1032829714
 sl_clock_manager_tree_config.h=481267497
@@ -6,5 +7,8 @@ sl_core_config.h=-1854422791
 sl_debug_swo_config.h=-178041412
 sl_device_init_dcdc_config.h=303593907
 sl_device_init_emu_config.h=-94662422
+sl_mbedtls_config.h=-3899725
+sl_mbedtls_device_config.h=-287029762
+sl_memory_manager_config.h=-1514202957
 sl_memory_manager_region_config.h=-793745704
 sl_mx25_flash_shutdown_eusart_config.h=-1933800066

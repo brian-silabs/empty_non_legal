@@ -5,6 +5,9 @@
 #include "sl_board_control.h"
 #include "sl_debug_swo.h"
 #include "sl_gpio.h"
+#include "sl_mbedtls.h"
+#include "sl_se_manager.h"
+#include "sli_protocol_crypto.h"
 #include "sl_cos.h"
 
 void sli_driver_permanent_allocation(void)
@@ -44,6 +47,10 @@ void sl_driver_init(void)
 void sl_service_init(void)
 {
   sl_board_configure_vcom();
+  sl_mbedtls_init();
+  sl_se_init();
+  sli_protocol_crypto_init();
+  sli_aes_seed_mask();
 }
 
 void sl_stack_init(void)
