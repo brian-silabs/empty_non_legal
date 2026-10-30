@@ -174,12 +174,10 @@ SECTIONS
     LONG (__data_start__)
     LONG ((__data_end__ - __data_start__) / 4)
 
-    /* Add each additional data section here */
-    /*
-    LONG (__etext2)
-    LONG (__data2_start__)
-    LONG ((__data2_end__ - __data2_start__) / 4)
-    */
+    /* The split image does not run Reset_Handler, so app init consumes these. */
+    LONG (__lma_ramfuncs_start__)
+    LONG (__vma_ramfuncs_start__)
+    LONG ((__vma_ramfuncs_end__ - __vma_ramfuncs_start__) / 4)
 
     __copy_table_end__ = .;
   } > FLASH
@@ -188,11 +186,8 @@ SECTIONS
   {
     . = ALIGN(4);
     __zero_table_start__ = .;
-    /* Add each additional bss section here */
-    /*
-    LONG (__bss2_start__)
-    LONG ((__bss2_end__ - __bss2_start__) / 4)
-    */
+    LONG (__bss_start__)
+    LONG ((__bss_end__ - __bss_start__) / 4)
 
     __zero_table_end__ = .;
     __etext = .;
@@ -272,6 +267,9 @@ heap_size = heap_limit - __HeapBase;
 
   linker_storage_begin = linker_storage_end - SIZEOF(.internal_storage);
   ASSERT((linker_storage_begin >= (__etext + SIZEOF(.data))), "FLASH memory overflowed !")
+  ASSERT(((__data_end__ - __data_start__) % 4) == 0, "Split .data must be word-sized")
+  ASSERT(((__vma_ramfuncs_end__ - __vma_ramfuncs_start__) % 4) == 0, "Split RAM functions must be word-sized")
+  ASSERT(((__bss_end__ - __bss_start__) % 4) == 0, "Split .bss must be word-sized")
 
 
   app_flash_end = 0x8100000 + 0x80000;

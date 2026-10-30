@@ -6,7 +6,6 @@
 #include "../empty/split_interface.h"
 
 #include <stdbool.h>
-#include <string.h>
 #include "radio_ccm.h"
 #include "sli_protocol_crypto.h"
 #include "app_radio.h"
@@ -21,21 +20,46 @@ static uint32_t process_count;
 static bool initialized;
 static uint8_t app_rx_buffer[APP_RX_BUFFER_SIZE];
 
+typedef struct {
+  const uint32_t *source;
+  uint32_t *destination;
+  uint32_t word_count;
+} split_copy_table_entry_t;
+
+typedef struct {
+  uint32_t *destination;
+  uint32_t word_count;
+} split_zero_table_entry_t;
+
+extern const split_copy_table_entry_t __copy_table_start__[];
+extern const split_copy_table_entry_t __copy_table_end__[];
+extern const split_zero_table_entry_t __zero_table_start__[];
+extern const split_zero_table_entry_t __zero_table_end__[];
+
+static void initialize_non_legal_ram(void)
+{
+  for (const split_copy_table_entry_t *entry = __copy_table_start__;
+       entry < __copy_table_end__;
+       ++entry) {
+    for (uint32_t i = 0U; i < entry->word_count; ++i) {
+      entry->destination[i] = entry->source[i];
+    }
+  }
+
+  for (const split_zero_table_entry_t *entry = __zero_table_start__;
+       entry < __zero_table_end__;
+       ++entry) {
+    for (uint32_t i = 0U; i < entry->word_count; ++i) {
+      entry->destination[i] = 0U;
+    }
+  }
+}
+
 /* Reset_Handler is never entered by the host. Initialize this image's RAM
- * before touching module/SDK globals, without resetting clocks or peripherals.
- * init is called once at boot, before any module users exist. */
+ * from its linker tables before touching module/SDK globals. */
 static sl_status_t non_legal_init(void)
 {
-  //TODO Check why Codex added RAM init
-  extern uint8_t __etext[], __data_start__[], __data_end__[];
-  extern uint8_t __bss_start__[], __bss_end__[];
-  extern uint8_t __lma_ramfuncs_start__[], __vma_ramfuncs_start__[];
-  extern uint8_t __vma_ramfuncs_end__[];
-  memcpy(__data_start__, __etext,
-         (size_t)(__data_end__ - __data_start__));
-  memset(__bss_start__, 0, (size_t)(__bss_end__ - __bss_start__));
-  memcpy(__vma_ramfuncs_start__, __lma_ramfuncs_start__,
-         (size_t)(__vma_ramfuncs_end__ - __vma_ramfuncs_start__));
+  initialize_non_legal_ram();
 
   sl_rail_status_t radio_status = app_radio_init();
   if (radio_status != SL_RAIL_STATUS_NO_ERROR) {
