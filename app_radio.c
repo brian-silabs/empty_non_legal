@@ -50,6 +50,16 @@ static volatile uint8_t rx_head = 0; // Write index
 static volatile uint8_t rx_tail = 0; // Read index
 static volatile uint8_t rx_count = 0; // Number of packets stored
 
+volatile uint32_t app_radio_rx_completion_count;
+volatile uint32_t app_radio_rx_packet_received_count;
+volatile uint32_t app_radio_rx_packet_queued_count;
+volatile uint32_t app_radio_rx_nonpacket_completion_count;
+volatile uint32_t app_radio_rx_queue_drop_count;
+volatile uint32_t app_radio_rx_last_completion_events;
+volatile uint32_t app_radio_rx_packets_processed_count;
+volatile uint16_t app_radio_last_rx_packet_length;
+volatile uint8_t app_radio_last_rx_packet[MAX_PACKET_LEN];
+
 /*******************************************************************************
  * Start RX on Channel
  ******************************************************************************/
@@ -90,6 +100,20 @@ bool app_radio_get_packet(uint8_t *dest_buffer, uint16_t *p_length, uint16_t max
   CORE_EXIT_ATOMIC();
 
   return true;
+}
+
+void app_radio_process_received_packets(void)
+{
+  uint8_t packet[MAX_PACKET_LEN];
+  uint16_t packet_length;
+
+  while (app_radio_get_packet(packet, &packet_length, sizeof(packet))) {
+    for (uint16_t i = 0U; i < packet_length; ++i) {
+      app_radio_last_rx_packet[i] = packet[i];
+    }
+    app_radio_last_rx_packet_length = packet_length;
+    app_radio_rx_packets_processed_count++;
+  }
 }
 
 /*******************************************************************************
@@ -188,6 +212,28 @@ sl_rail_status_t app_radio_init(void)
   if (initStatus != SL_RAIL_STATUS_NO_ERROR)
   {
     printf("RAIL init failed: 802.15.4 radio config (0x%08lx)\r\n", (unsigned long)initStatus);
+    return initStatus;
+  }
+
+  const sl_rail_state_transitions_t rx_transitions = {
+    .success = SL_RAIL_RF_STATE_RX,
+    .error = SL_RAIL_RF_STATE_RX,
+  };
+  initStatus = sl_rail_set_rx_transitions(greenPowerHandle_g, &rx_transitions);
+  if (initStatus != SL_RAIL_STATUS_NO_ERROR) {
+    printf("RAIL init failed: sl_rail_set_rx_transitions (0x%08lx)\r\n",
+           (unsigned long)initStatus);
+    return initStatus;
+  }
+
+  const sl_rail_state_transitions_t tx_transitions = {
+    .success = SL_RAIL_RF_STATE_RX,
+    .error = SL_RAIL_RF_STATE_RX,
+  };
+  initStatus = sl_rail_set_tx_transitions(greenPowerHandle_g, &tx_transitions);
+  if (initStatus != SL_RAIL_STATUS_NO_ERROR) {
+    printf("RAIL init failed: sl_rail_set_tx_transitions (0x%08lx)\r\n",
+           (unsigned long)initStatus);
     return initStatus;
   }
 
@@ -336,9 +382,24 @@ sl_rail_status_t app_radio_init(void)
 static void radio_event_handler(sl_rail_handle_t rail_handle,
                                 sl_rail_events_t events)
 {
+  uint32_t completion_events = (uint32_t)(events & SL_RAIL_EVENTS_RX_COMPLETION);
+  if (completion_events != 0U) {
+    app_radio_rx_last_completion_events = completion_events;
+    while (completion_events != 0U) {
+      const uint32_t event = completion_events & (0U - completion_events);
+      app_radio_rx_completion_count++;
+      if (event != (uint32_t)SL_RAIL_EVENT_RX_PACKET_RECEIVED) {
+        app_radio_rx_nonpacket_completion_count++;
+      }
+      completion_events &= completion_events - 1U;
+    }
+  }
+
   if (events & SL_RAIL_EVENT_RX_PACKET_RECEIVED) {
     sl_rail_rx_packet_info_t packet_info;
     sl_rail_rx_packet_handle_t packet_handle;
+
+    app_radio_rx_packet_received_count++;
 
     // Retrieve information on the received packet
     packet_handle = sl_rail_get_rx_packet_info(rail_handle,
@@ -354,6 +415,7 @@ static void radio_event_handler(sl_rail_handle_t rail_handle,
         if (rx_count == RX_PACKET_QUEUE_SIZE) {
           rx_tail = (rx_tail + 1) % RX_PACKET_QUEUE_SIZE;
           rx_count--;
+          app_radio_rx_queue_drop_count++;
         }
 
         // Copy the packet data into the application circular queue
@@ -362,8 +424,11 @@ static void radio_event_handler(sl_rail_handle_t rail_handle,
 
         rx_head = (rx_head + 1) % RX_PACKET_QUEUE_SIZE;
         rx_count++;
+        app_radio_rx_packet_queued_count++;
 
         CORE_EXIT_ATOMIC();
+      } else {
+        app_radio_rx_queue_drop_count++;
       }
 
       // Free packet handle in the RAIL FIFO/queue

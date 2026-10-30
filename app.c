@@ -63,13 +63,18 @@ static sl_status_t non_legal_init(void)
   if (radio_status != SL_RAIL_STATUS_NO_ERROR) {
     return SL_STATUS_FAIL;
   }
-  //app_radio_start_rx_channel(DEMO_RADIO_CHANNEL);
 
 
   sl_status_t status = sli_protocol_crypto_init();
   if (status != SL_STATUS_OK) { return status; }
   /* Seed before the legal SE worker starts: SDK masking uses SE entropy. */
   sli_aes_seed_mask();
+
+  radio_status = app_radio_start_rx_channel(DEMO_RADIO_CHANNEL);
+  if (radio_status != SL_RAIL_STATUS_NO_ERROR) {
+    return SL_STATUS_FAIL;
+  }
+
   process_count = 0U;
   initialized = true;
   return SL_STATUS_OK;
@@ -79,6 +84,7 @@ static uint32_t non_legal_process_action(void)
 {
   if (initialized) {
     process_count++;
+    app_radio_process_received_packets();
     // 1. Transmit the demo packet (called every second)
     sl_rail_status_t tx_status = app_radio_send_demo_packet(DEMO_RADIO_CHANNEL);
     (void)tx_status; // Suppress unused variable warning if logging/assertions are omitted
