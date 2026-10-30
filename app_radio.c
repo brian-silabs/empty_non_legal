@@ -7,6 +7,7 @@
 
 #include "em_cmu.h"
 #include "em_prs.h"
+#include "em_core.h"
 
 #include "sl_status.h"
 #include "stdio.h"
@@ -54,7 +55,14 @@ sl_rail_status_t app_radio_start_rx_channel(uint8_t channel_a)
  ******************************************************************************/
 bool app_radio_get_packet(uint8_t *dest_buffer, uint16_t *p_length, uint16_t max_buf_size)
 {
-  if (rx_count == 0 || dest_buffer == NULL || p_length == NULL) {
+  if (dest_buffer == NULL || p_length == NULL) {
+    return false;
+  }
+
+  CORE_DECLARE_IRQ_STATE;
+  CORE_ENTER_ATOMIC();
+  if (rx_count == 0U) {
+    CORE_EXIT_ATOMIC();
     return false;
   }
 
@@ -69,6 +77,7 @@ bool app_radio_get_packet(uint8_t *dest_buffer, uint16_t *p_length, uint16_t max
   // Advance read pointer
   rx_tail = (rx_tail + 1) % RX_PACKET_QUEUE_SIZE;
   rx_count--;
+  CORE_EXIT_ATOMIC();
 
   return true;
 }
@@ -317,19 +326,24 @@ static void radio_event_handler(sl_rail_handle_t rail_handle,
                                                &packet_info);
 
     if (packet_handle != SL_RAIL_RX_PACKET_HANDLE_INVALID) {
-      // Overwrite oldest if queue is full (data loss acceptable)
-      if (rx_count == RX_PACKET_QUEUE_SIZE) {
-        rx_tail = (rx_tail + 1) % RX_PACKET_QUEUE_SIZE;
-        rx_count--;
-      }
-
       if (packet_info.packet_bytes <= MAX_PACKET_LEN) {
+        CORE_DECLARE_IRQ_STATE;
+        CORE_ENTER_ATOMIC();
+
+        // Overwrite oldest if queue is full (data loss acceptable).
+        if (rx_count == RX_PACKET_QUEUE_SIZE) {
+          rx_tail = (rx_tail + 1) % RX_PACKET_QUEUE_SIZE;
+          rx_count--;
+        }
+
         // Copy the packet data into the application circular queue
         sl_rail_copy_rx_packet(rail_handle, app_rx_queue[rx_head].data, &packet_info);
         app_rx_queue[rx_head].length = packet_info.packet_bytes;
 
         rx_head = (rx_head + 1) % RX_PACKET_QUEUE_SIZE;
         rx_count++;
+
+        CORE_EXIT_ATOMIC();
       }
 
       // Free packet handle in the RAIL FIFO/queue
