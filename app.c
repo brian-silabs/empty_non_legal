@@ -37,7 +37,10 @@ static sl_status_t non_legal_init(void)
   memcpy(__vma_ramfuncs_start__, __lma_ramfuncs_start__,
          (size_t)(__vma_ramfuncs_end__ - __vma_ramfuncs_start__));
 
-  app_radio_init();
+  sl_rail_status_t radio_status = app_radio_init();
+  if (radio_status != SL_RAIL_STATUS_NO_ERROR) {
+    return SL_STATUS_FAIL;
+  }
   //app_radio_start_rx_channel(DEMO_RADIO_CHANNEL);
 
 

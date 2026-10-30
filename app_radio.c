@@ -94,11 +94,9 @@ sl_rail_status_t app_radio_send_demo_packet(uint8_t channel_a)
   return sl_rail_start_tx(greenPowerHandle_g, channel_a, SL_RAIL_TX_OPTIONS_DEFAULT, NULL);
 }
 
-void app_radio_init(void)
+sl_rail_status_t app_radio_init(void)
 {
   sl_rail_status_t initStatus;
-  uint16_t fifoSize;
-  uint8_t radioPrsSyncSentChannel, radioPrsFrameDetChannel;
 
   railCfg.events_callback = &radio_event_handler;
   railCfg.rx_packet_queue_entries = sl_rail_builtin_rx_packet_queue_entries;
@@ -115,7 +113,8 @@ void app_radio_init(void)
   initStatus = sl_rail_init(&greenPowerHandle_g, &railCfg, NULL);
   if (initStatus != SL_RAIL_STATUS_NO_ERROR)
   {
-    while(1);
+    printf("RAIL init failed: sl_rail_init (0x%08lx)\r\n", (unsigned long)initStatus);
+    return initStatus;
   }
 
   // // -------------------------------------------------------------------------
@@ -148,7 +147,8 @@ void app_radio_init(void)
   initStatus = sl_rail_config_cal(greenPowerHandle_g, SL_RAIL_CAL_ALL);
   if (initStatus != SL_RAIL_STATUS_NO_ERROR)
   {
-    while(1);
+    printf("RAIL init failed: sl_rail_config_cal (0x%08lx)\r\n", (unsigned long)initStatus);
+    return initStatus;
   }
 
   // -------------------------------------------------------------------------
@@ -158,7 +158,8 @@ void app_radio_init(void)
   initStatus = sl_rail_ieee802154_config_2p4_ghz_radio(greenPowerHandle_g);
   if (initStatus != SL_RAIL_STATUS_NO_ERROR)
   {
-    while(1);
+    printf("RAIL init failed: 802.15.4 radio config (0x%08lx)\r\n", (unsigned long)initStatus);
+    return initStatus;
   }
 
   // // -------------------------------------------------------------------------
@@ -181,7 +182,8 @@ void app_radio_init(void)
                                      SL_RAIL_EVENTS_ALL);
   if (initStatus != SL_RAIL_STATUS_NO_ERROR)
   {
-    while(1);
+    printf("RAIL init failed: sl_rail_config_events (0x%08lx)\r\n", (unsigned long)initStatus);
+    return initStatus;
   }
 
   // -------------------------------------------------------------------------
@@ -192,7 +194,8 @@ void app_radio_init(void)
                                          SL_RAIL_RX_OPTION_IGNORE_CRC_ERRORS);
   if (initStatus != SL_RAIL_STATUS_NO_ERROR)
   {
-    while(1);
+    printf("RAIL init failed: sl_rail_config_rx_options (0x%08lx)\r\n", (unsigned long)initStatus);
+    return initStatus;
   }
 
   // -------------------------------------------------------------------------
@@ -205,8 +208,11 @@ void app_radio_init(void)
                                    0);
   if (initStatus != SL_RAIL_STATUS_NO_ERROR)
   {
-    while(1);
+    printf("RAIL init failed: sl_rail_set_tx_fifo (0x%08lx)\r\n", (unsigned long)initStatus);
+    return initStatus;
   }
+
+  return SL_RAIL_STATUS_NO_ERROR;
 
   // // -------------------------------------------------------------------------
   // // Step 11: Set TX power in dBm
