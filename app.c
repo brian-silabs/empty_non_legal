@@ -14,11 +14,9 @@
 extern const uint32_t __VECTOR_TABLE[];
 
 #define DEMO_RADIO_CHANNEL 19U
-#define APP_RX_BUFFER_SIZE 128U
 
 static uint32_t process_count;
 static bool initialized;
-static uint8_t app_rx_buffer[APP_RX_BUFFER_SIZE];
 
 typedef struct {
   const uint32_t *source;
@@ -31,23 +29,23 @@ typedef struct {
   uint32_t word_count;
 } split_zero_table_entry_t;
 
-extern const split_copy_table_entry_t __copy_table_start__[];
-extern const split_copy_table_entry_t __copy_table_end__[];
-extern const split_zero_table_entry_t __zero_table_start__[];
-extern const split_zero_table_entry_t __zero_table_end__[];
+extern const split_copy_table_entry_t __split_copy_table_start__[];
+extern const split_copy_table_entry_t __split_copy_table_end__[];
+extern const split_zero_table_entry_t __split_zero_table_start__[];
+extern const split_zero_table_entry_t __split_zero_table_end__[];
 
 static void initialize_non_legal_ram(void)
 {
-  for (const split_copy_table_entry_t *entry = __copy_table_start__;
-       entry < __copy_table_end__;
+  for (const split_copy_table_entry_t *entry = __split_copy_table_start__;
+       entry < __split_copy_table_end__;
        ++entry) {
     for (uint32_t i = 0U; i < entry->word_count; ++i) {
       entry->destination[i] = entry->source[i];
     }
   }
 
-  for (const split_zero_table_entry_t *entry = __zero_table_start__;
-       entry < __zero_table_end__;
+  for (const split_zero_table_entry_t *entry = __split_zero_table_start__;
+       entry < __split_zero_table_end__;
        ++entry) {
     for (uint32_t i = 0U; i < entry->word_count; ++i) {
       entry->destination[i] = 0U;
