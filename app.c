@@ -10,6 +10,9 @@
 #include "radio_ccm.h"
 #include "sli_protocol_crypto.h"
 #include "app_radio.h"
+#include "em_device.h"
+
+extern const uint32_t __VECTOR_TABLE[];
 
 #define DEMO_RADIO_CHANNEL 19U
 #define APP_RX_BUFFER_SIZE 128U
@@ -76,6 +79,8 @@ __attribute__((section(".split_interface"), used)) = {
   .ccm_encrypt = radio_ccm_encrypt,
   .ccm_decrypt = radio_ccm_decrypt,
   .radio_test = radio_ccm_test,
+  .vector_table = __VECTOR_TABLE,
+  .vector_table_entries = 16U + EXT_IRQ_COUNT,
 };
 
 void app_init(void)
