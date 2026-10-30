@@ -20,6 +20,10 @@
 #define MAX_PACKET_LEN       128
 #define RX_PACKET_QUEUE_SIZE 10
 
+/* Included by the SDK's PA conversion component, but its compatibility header
+ * declares conflicting RAIL 2.x and 3.x config types for this project. */
+extern void sl_rail_util_pa_init(void);
+
 typedef struct {
   uint16_t length;
   uint8_t  data[MAX_PACKET_LEN];
@@ -132,16 +136,26 @@ sl_rail_status_t app_radio_init(void)
     return initStatus;
   }
 
-  // // -------------------------------------------------------------------------
-  // // Step 3: PA post-init (must be after sl_rail_init, before TX)
-  // // Establishes default PA voltage and ramp time.
-  // // Use SL_RAIL_TX_PA_MODE_2P4_GHZ for 2.4 GHz 802.15.4
-  // // -------------------------------------------------------------------------
-  // initStatus = sl_rail_util_pa_post_init(greenPowerHandle_g, SL_RAIL_TX_PA_MODE_2P4_GHZ);
-  // if (initStatus != SL_RAIL_STATUS_NO_ERROR)
-  // {
-  //   while(1);
-  // }
+  // Initialize the MG24 PA curves and select a valid 2.4 GHz PA before TX.
+  sl_rail_util_pa_init();
+  const sl_rail_tx_power_config_t pa_config = {
+    .mode = SL_RAIL_TX_POWER_MODE_2P4_GHZ_HP,
+    .voltage_mv = 1800U,
+    .ramp_time_us = 10U,
+  };
+  initStatus = sl_rail_config_tx_power(greenPowerHandle_g, &pa_config);
+  if (initStatus != SL_RAIL_STATUS_NO_ERROR) {
+    printf("RAIL init failed: sl_rail_config_tx_power (0x%08lx)\r\n",
+           (unsigned long)initStatus);
+    return initStatus;
+  }
+  // Use a conservative 0 dBm output for the demo packet.
+  initStatus = sl_rail_set_tx_power_dbm(greenPowerHandle_g, 0);
+  if (initStatus != SL_RAIL_STATUS_NO_ERROR) {
+    printf("RAIL init failed: sl_rail_set_tx_power_dbm (0x%08lx)\r\n",
+           (unsigned long)initStatus);
+    return initStatus;
+  }
 
   // // -------------------------------------------------------------------------
   // // Step 4: Configure data (packet mode)
