@@ -13,6 +13,7 @@
 #include "stdio.h"
 #include <string.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #define TX_FIFO_BYTES 256
 
@@ -28,11 +29,16 @@ static void radio_event_handler(sl_rail_handle_t rail_handle,
                                 sl_rail_events_t events);
 
 static SL_RAIL_DECLARE_FIFO_BUFFER(aligned_tx_fifo, TX_FIFO_BYTES);
-static uint8_t *tx_fifo = (uint8_t *)aligned_tx_fifo; // For byte access
 
 sl_rail_handle_t greenPowerHandle_g = SL_RAIL_EFR32_HANDLE;
 
 sl_rail_config_t railCfg;
+
+/* Kept across the legal image's reset path for debugger inspection. */
+volatile RAIL_AssertErrorCodes_t app_radio_last_assert_error
+  __attribute__((section(".noinit")));
+volatile uintptr_t app_radio_last_assert_handle
+  __attribute__((section(".noinit")));
 
 // Circular buffer for 10 packets
 static rx_packet_t app_rx_queue[RX_PACKET_QUEUE_SIZE];
@@ -359,18 +365,10 @@ static void radio_event_handler(sl_rail_handle_t rail_handle,
 
 void RAILCb_AssertFailed(RAIL_Handle_t railHandle, RAIL_AssertErrorCodes_t errorCode)
 {
-  static const char* railErrorMessages[] = RAIL_ASSERT_ERROR_MESSAGES;
-  const char *errorMessage = "Unknown";
-
-  // If this error code is within the range of known error messages then use
-  // the appropriate error message.
-  if (errorCode < (sizeof(railErrorMessages) / sizeof(char*))) {
-    errorMessage = railErrorMessages[errorCode];
-  }
-  printf("RAIL ASSERT %u: %s\n", errorCode, errorMessage);
-
-  while(1);
-
-  // Reset the chip since an assert is a fatal error
+  app_radio_last_assert_handle = (uintptr_t)railHandle;
+  app_radio_last_assert_error = errorCode;
   NVIC_SystemReset();
+  for (;;) {
+    // System reset should not return.
+  }
 }
