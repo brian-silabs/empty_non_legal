@@ -169,6 +169,7 @@ SECTIONS
   {
     . = ALIGN(4);
     __copy_table_start__ = .;
+    __split_copy_table_start__ = .;
 
     LONG (__etext)
     LONG (__data_start__)
@@ -180,16 +181,19 @@ SECTIONS
     LONG ((__vma_ramfuncs_end__ - __vma_ramfuncs_start__) / 4)
 
     __copy_table_end__ = .;
+    __split_copy_table_end__ = .;
   } > FLASH
 
   .zero.table (READONLY):
   {
     . = ALIGN(4);
     __zero_table_start__ = .;
+    __split_zero_table_start__ = .;
     LONG (__bss_start__)
     LONG ((__bss_end__ - __bss_start__) / 4)
 
     __zero_table_end__ = .;
+    __split_zero_table_end__ = .;
     __etext = .;
   } > FLASH
 
